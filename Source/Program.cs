@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Windows.Forms;
-using System.Diagnostics;
 using CharacterEditor.Forms;
+using System.Diagnostics;
 
 namespace CharacterEditor
 {
 	static class Program
 	{
-		public const string Version = "0.3";
+		public const string Version = "0.4";
 
 		[STAThread]
 		public static void Main()
 		{
+			Application.EnableVisualStyles();
+			Application.SetCompatibleTextRenderingDefault(false);
+
 #if !DEBUG
 			AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
 			{
@@ -31,8 +34,6 @@ namespace CharacterEditor
             }
 #endif
 
-			Application.EnableVisualStyles();
-			Application.SetCompatibleTextRenderingDefault(false);
 			Application.Run(new Editor());
 		}
 	}
