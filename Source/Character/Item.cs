@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace CharacterEditor.Character
 {
@@ -10,13 +9,20 @@ namespace CharacterEditor.Character
 	{
 		public const int AttributeCount = 32;
 
+		[Flags]
+		public enum ItemFlags : byte
+		{
+			Adapted = 0x01
+		}
+
 		public byte Type;
 		public byte Subtype;
+		public short ActualModifier; // TODO Hack, should build modifier from its fragments
 		public short Modifier;
-		private int unknown1;
+		public byte RecipeType;
 		public byte Rarity;
-		public byte Material;	// TODO Sometimes denotes what class can use the item...
-		public byte Flags;		// TODO Noted in ItemIDs.txt
+		public byte Material;
+		public ItemFlags Flags;
 		public short Level;
 
 		public List<ItemAttribute> Attributes;
@@ -32,22 +38,30 @@ namespace CharacterEditor.Character
 			{
 				try
 				{
-					// <Modifier> <Material> <Item Name>
-					StringBuilder name = new StringBuilder();
+					// TODO Should probably clean this up
+					string format = "{0}";
+
+					string ownerName = NameGenerator.Generate(Modifier, (Modifier * 7) % 11);
+					string itemName = "";
+
+					if (Type == (int)Constants.ItemType.Recipes)
+					{
+						itemName += Constants.ItemSubtypes[RecipeType][Subtype] + " ";
+						itemName += Constants.ItemSubtypes[(int)Constants.ItemType.Recipes][Subtype];
+					}
+					else
+						itemName += Constants.ItemSubtypes[Type][Subtype];
 
 					if (Material != 0)
-					{
-						name.Append(Constants.ItemMaterialNames[Material]);
-						name.Append(" ");
-					}
+						itemName = Constants.ItemMaterialNames[Material] + " " + itemName;
 
-					name.Append(Constants.ItemSubtypes[Type][Subtype]);
+					if (Modifier != 0)
+						format = Constants.ItemModifiers[Rarity][(Modifier - 1) % 10];
 
-					return name.ToString();
+					return Rarity < 3 ? String.Format(format, itemName) : String.Format(format, itemName, ownerName);
 				}
 				catch (Exception)
 				{
-					Console.WriteLine("FriendlyName error: Type = {0}; Subtype = {1}", Type, Subtype);
 					return "ERROR";
 				}
 			}
@@ -60,10 +74,11 @@ namespace CharacterEditor.Character
 			reader.Skip(2);
 			Modifier = reader.ReadInt16();
 			reader.Skip(2);
-			unknown1 = reader.ReadInt32();
+			RecipeType = reader.ReadByte();
+			reader.Skip(3);
 			Rarity = reader.ReadByte();
 			Material = reader.ReadByte();
-			Flags = reader.ReadByte();
+			Flags = (ItemFlags)reader.ReadByte();
 			reader.Skip(1);
 			Level = reader.ReadInt16();
 			reader.Skip(2);
@@ -79,9 +94,7 @@ namespace CharacterEditor.Character
 			// AttributesUsed is calculated on write
 			reader.Skip(4);
 
-			// TODO Ignore recipes for now
-			if (Type == 2)
-				Subtype = 0;
+			ActualModifier = Modifier;
 		}
 
 		public void Write(BinaryWriter writer)
@@ -91,10 +104,11 @@ namespace CharacterEditor.Character
 			writer.Skip(2);
 			writer.Write(Modifier);
 			writer.Skip(2);
-			writer.Write(unknown1);
+			writer.Write(RecipeType);
+			writer.Skip(3);
 			writer.Write(Rarity);
 			writer.Write(Material);
-			writer.Write(Flags);
+			writer.Write((byte)Flags);
 			writer.Skip(1);
 			writer.Write(Level);
 			writer.Skip(2);

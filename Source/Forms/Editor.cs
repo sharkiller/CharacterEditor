@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
@@ -19,12 +20,11 @@ namespace CharacterEditor.Forms
 
 			InitializeComponent();
 
-			comboBoxPetKind.Items.Add("None");
-			comboBoxPetKind.Items.AddRange(Constants.ItemSubtypes[(int)Constants.ItemType.Pets].Where(x => !String.IsNullOrEmpty(x)).ToArray());
+			labelAboutEditorName.Text += " v" + Program.Version;
 
-			comboBoxItemType.Items.AddRange(Constants.ItemTypeNames.Where(x => !String.IsNullOrEmpty(x)).ToArray());
-			comboBoxItemMaterial.Items.AddRange(Constants.ItemMaterialNames.Where(x => !String.IsNullOrEmpty(x)).ToArray());
-			comboBoxItemModifier.Items.AddRange(Constants.ItemModifiers.Where(x => !String.IsNullOrEmpty(x)).ToArray());
+			comboBoxPetKind.Items.Add("None");
+			string[] pets = Constants.ItemSubtypes[(int)Constants.ItemType.Pets];
+			comboBoxPetKind.Items.AddRange(pets.Where(x => !String.IsNullOrEmpty(x)).ToArray());
 		}
 
 		private void FormEditorShown(object sender, EventArgs e)
@@ -45,19 +45,24 @@ namespace CharacterEditor.Forms
 
 				while (!IsDisposed)
 				{
-					if (dirtyWatcher.Dirty != previousDirty)
+					lock (dirtyWatcher)
 					{
-						string title = "Character Editor v" + Program.Version + " [" + character.Name + "]";
+						if (dirtyWatcher.Dirty != previousDirty && !dirtyWatcher.IgnoreDirtiness)
+						{
+							string title = "Character Editor v" + Program.Version + " [" + character.Name + "]";
 
-						if (dirtyWatcher.Dirty)
-							title += " *";
+							if (dirtyWatcher.Dirty)
+								title += " *";
 
-						if (InvokeRequired)
-							Invoke(new MethodInvoker(() => Text = title));
-						else
-							Text = title;
+							if (InvokeRequired)
+								Invoke(new MethodInvoker(() => Text = title));
+							else
+								Text = title;
 
-						previousDirty = dirtyWatcher.Dirty;
+							previousDirty = dirtyWatcher.Dirty;
+						}
+						else if (dirtyWatcher.IgnoreDirtiness)
+							dirtyWatcher.Dirty = false;
 					}
 
 					Thread.Sleep(1);
@@ -144,6 +149,11 @@ namespace CharacterEditor.Forms
 			}
 
 			Enabled = character != null;
+		}
+
+		private void LinkLabelX2048LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+		{
+			Process.Start("http://www.x2048.com/");
 		}
 	}
 }

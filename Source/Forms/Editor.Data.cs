@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Windows.Forms;
 using CharacterEditor.Character;
 
@@ -10,8 +9,8 @@ namespace CharacterEditor.Forms
 		private void SyncCharacterDataToGui()
 		{
 			textBoxName.Text = character.Name;
-			nudLevel.Value = character.Level;
-			nudExperience.Value = character.Experience;
+			nudLevel.SetValueClamped(character.Level);
+			nudExperience.SetValueClamped(character.Experience);
 			comboBoxGender.SelectedIndex = character.Gender;
 			comboBoxRace.SelectedIndex = character.Race;
 			comboBoxClass.SelectedIndex = (int)character.Class - 1;
@@ -78,17 +77,17 @@ namespace CharacterEditor.Forms
 				// Ok .NET 2.0, have it your way
 				listView.SelectedIndexChanged += ListViewInventorySelectedIndexChanged;
 
-				foreach (Tuple<int, Item> item in inventory.Items)
+				foreach (Slot slot in inventory.Items)
 				{
 					ListViewItem listViewItem;
 
-					if (item.Item1 > 0 && item.Item2.Type != 0x00)
+					if (slot.Count > 0 && slot.Item.Type != 0x00)
 					{
 						listViewItem = new ListViewItem
 						{
-							ImageIndex = item.Item2.Type,
-							Text = item.Item2.FriendlyName,
-							Tag = item.Item2
+							ImageIndex = slot.Item.Type,
+							Text = slot.Item.FriendlyName,
+							Tag = slot.Item
 						};
 					}
 					else
@@ -97,7 +96,7 @@ namespace CharacterEditor.Forms
 						{
 							ImageIndex = 0,
 							Text = "",
-							Tag = item.Item2
+							Tag = slot.Item
 						};
 					}
 
@@ -107,10 +106,6 @@ namespace CharacterEditor.Forms
 				tabPage.Controls.Add(listView);
 				tabControlInventory.TabPages.Add(tabPage);
 			}
-
-			// TODO Find a cleaner way to do this, maybe?
-			ComboBoxRaceSelectedIndexChanged(null, null);
-			ComboBoxClassSelectedIndexChanged(null, null);
 
 			if (dirtyWatcher != null)
 				dirtyWatcher.Dirty = false;
